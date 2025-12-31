@@ -74,6 +74,13 @@ class SubstackLinkChecker:
         'couldn\'t find', 'could not find'
     ]
 
+    # Default domains to skip (known bot-blockers)
+    DEFAULT_SKIP_DOMAINS = [
+        'wikipedia.org',
+        'en.wikipedia.org',
+        'ko-fi.com',
+    ]
+
     def __init__(
         self,
         base_url: str,
@@ -81,7 +88,8 @@ class SubstackLinkChecker:
         concurrency: int = 10,
         max_retries: int = 3,
         retry_delay: float = 1.0,
-        verbose: bool = False
+        verbose: bool = False,
+        skip_domains: Optional[List[str]] = None
     ):
         """
         Initialize the link checker.
@@ -93,6 +101,7 @@ class SubstackLinkChecker:
             max_retries: Maximum retry attempts for transient failures
             retry_delay: Base delay between retries (doubles each attempt)
             verbose: Enable verbose output
+            skip_domains: List of domains to skip checking (e.g., ['wikipedia.org'])
         """
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
@@ -100,6 +109,7 @@ class SubstackLinkChecker:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.verbose = verbose
+        self.skip_domains = set(skip_domains) if skip_domains else set()
 
         # Synchronous session for sitemap/post fetching
         self.session = requests.Session()
@@ -117,7 +127,8 @@ class SubstackLinkChecker:
             'cache_hits': 0,
             'broken_links': 0,
             'retries': 0,
-            'posts_skipped': 0
+            'posts_skipped': 0,
+            'links_skipped': 0
         }
 
         # History tracking
@@ -167,6 +178,21 @@ class SubstackLinkChecker:
         if skipped > 0:
             self._log(f"Skipping {skipped} previously checked posts", force=True)
         return unchecked
+
+    def should_skip_domain(self, url: str) -> bool:
+        """Check if a URL's domain should be skipped."""
+        if not self.skip_domains:
+            return False
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+            # Check if domain matches or is a subdomain of any skip domain
+            for skip_domain in self.skip_domains:
+                if domain == skip_domain or domain.endswith('.' + skip_domain):
+                    return True
+            return False
+        except Exception:
+            return False
 
     def _log(self, message: str, force: bool = False):
         """Print message if verbose mode is enabled or force is True."""
@@ -396,6 +422,11 @@ class SubstackLinkChecker:
 
         Returns: LinkCheckResult
         """
+        # Skip domains that block bots
+        if self.should_skip_domain(link):
+            self.stats['links_skipped'] += 1
+            return LinkCheckResult(False, "Skipped (bot-blocking domain)")
+
         # Check cache first
         if link in self.link_cache:
             self.stats['cache_hits'] += 1
@@ -506,6 +537,7 @@ class SubstackLinkChecker:
         print("SUMMARY")
         print(f"{'=' * 50}")
         print(f"Total links checked: {self.stats['total_links_checked']}")
+        print(f"Links skipped (bot-blockers): {self.stats['links_skipped']}")
         print(f"Cache hits: {self.stats['cache_hits']}")
         print(f"Retries performed: {self.stats['retries']}")
         print(f"Broken links found: {len(self.results)}")
@@ -724,6 +756,12 @@ Examples:
         action='store_true',
         help='Only check posts not in history (requires --history-file)'
     )
+    parser.add_argument(
+        '--skip-domains', '-S',
+        nargs='+',
+        default=['wikipedia.org', 'ko-fi.com'],
+        help='Domains to skip checking (default: wikipedia.org ko-fi.com). Use --skip-domains none to check all.'
+    )
 
     return parser.parse_args()
 
@@ -737,12 +775,16 @@ def main():
         print("Error: --only-new requires --history-file to be specified")
         sys.exit(1)
 
+    # Handle skip_domains: 'none' means check all domains
+    skip_domains = None if args.skip_domains == ['none'] else args.skip_domains
+
     checker = SubstackLinkChecker(
         base_url=args.base_url,
         timeout=args.timeout,
         concurrency=args.concurrency,
         max_retries=args.max_retries,
-        verbose=args.verbose
+        verbose=args.verbose,
+        skip_domains=skip_domains
     )
 
     checker.run(
