@@ -13,10 +13,13 @@ Features:
 import argparse
 import asyncio
 import csv
+import json
+import os
 import re
 import sys
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
@@ -113,8 +116,57 @@ class SubstackLinkChecker:
             'total_links_checked': 0,
             'cache_hits': 0,
             'broken_links': 0,
-            'retries': 0
+            'retries': 0,
+            'posts_skipped': 0
         }
+
+        # History tracking
+        self.checked_posts: Dict[str, str] = {}  # url -> timestamp
+        self.history_file: Optional[str] = None
+
+    def load_history(self, history_file: str) -> None:
+        """Load checked posts history from JSON file."""
+        self.history_file = history_file
+        if os.path.exists(history_file):
+            try:
+                with open(history_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.checked_posts = data.get('checked_posts', {})
+                self._log(f"Loaded history: {len(self.checked_posts)} previously checked posts", force=True)
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"Warning: Could not load history file: {e}")
+                self.checked_posts = {}
+        else:
+            self._log(f"No history file found, starting fresh", force=True)
+
+    def save_history(self) -> None:
+        """Save checked posts history to JSON file."""
+        if not self.history_file:
+            return
+
+        try:
+            data = {
+                'last_updated': datetime.now().isoformat(),
+                'checked_posts': self.checked_posts
+            }
+            with open(self.history_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+            self._log(f"Saved history: {len(self.checked_posts)} checked posts", force=True)
+        except IOError as e:
+            print(f"Warning: Could not save history file: {e}")
+
+    def mark_post_checked(self, post_url: str) -> None:
+        """Mark a post as checked in the history."""
+        self.checked_posts[post_url] = datetime.now().isoformat()
+
+    def filter_unchecked_posts(self, post_urls: List[str]) -> List[str]:
+        """Filter out posts that have already been checked."""
+        unchecked = [url for url in post_urls if url not in self.checked_posts]
+        skipped = len(post_urls) - len(unchecked)
+        self.stats['posts_skipped'] = skipped
+        if skipped > 0:
+            self._log(f"Skipping {skipped} previously checked posts", force=True)
+        return unchecked
 
     def _log(self, message: str, force: bool = False):
         """Print message if verbose mode is enabled or force is True."""
@@ -485,7 +537,9 @@ class SubstackLinkChecker:
         year: Optional[int] = None,
         limit: Optional[int] = None,
         output_file: str = 'broken_links_report.csv',
-        url_file: Optional[str] = None
+        url_file: Optional[str] = None,
+        history_file: Optional[str] = None,
+        only_new: bool = False
     ):
         """
         Main async entry point to run the link checker.
@@ -495,6 +549,8 @@ class SubstackLinkChecker:
             limit: Maximum number of posts to check
             output_file: Output CSV filename
             url_file: Path to file containing URLs (one per line)
+            history_file: Path to history file for tracking checked posts
+            only_new: If True, only check posts not in history
         """
         print("Substack Broken Link Checker")
         print(f"{'=' * 50}")
@@ -502,13 +558,20 @@ class SubstackLinkChecker:
         print(f"Concurrency: {self.concurrency}")
         print(f"Max retries: {self.max_retries}")
 
+        # Load history if tracking is enabled
+        if history_file:
+            self.load_history(history_file)
+            print(f"History file: {history_file}")
+            if only_new:
+                print(f"Mode: Only new posts (skipping previously checked)")
+
         # Get post URLs
         if url_file:
-            print(f"Mode: File input")
+            print(f"Input: File")
             print(f"URL file: {url_file}")
             post_urls = self.load_urls_from_file(url_file, limit)
         elif year:
-            print(f"Mode: Sitemap")
+            print(f"Input: Sitemap")
             print(f"Year: {year}")
             post_urls = self.get_post_urls_from_year_sitemap(year, limit)
         else:
@@ -518,10 +581,18 @@ class SubstackLinkChecker:
         if limit:
             print(f"Post limit: {limit}")
 
+        # Filter to only new posts if requested
+        if only_new and history_file:
+            original_count = len(post_urls)
+            post_urls = self.filter_unchecked_posts(post_urls)
+            print(f"Posts to check: {len(post_urls)} new (skipped {original_count - len(post_urls)} already checked)")
+
         print(f"{'=' * 50}\n")
 
         if not post_urls:
-            print("No posts found!")
+            print("No posts to check!")
+            if history_file:
+                self.save_history()
             return
 
         start_time = time.time()
@@ -530,9 +601,16 @@ class SubstackLinkChecker:
         for i, post_url in enumerate(post_urls, 1):
             print(f"[{i}/{len(post_urls)}] Processing: {post_url}")
             await self.check_post_links_async(post_url)
+            # Mark as checked after processing
+            if history_file:
+                self.mark_post_checked(post_url)
 
         elapsed = time.time() - start_time
         print(f"\nCompleted in {elapsed:.1f} seconds")
+
+        # Save history if tracking is enabled
+        if history_file:
+            self.save_history()
 
         # Generate report
         self.generate_report(output_file)
@@ -542,14 +620,16 @@ class SubstackLinkChecker:
         year: Optional[int] = None,
         limit: Optional[int] = None,
         output_file: str = 'broken_links_report.csv',
-        url_file: Optional[str] = None
+        url_file: Optional[str] = None,
+        history_file: Optional[str] = None,
+        only_new: bool = False
     ):
         """
         Synchronous wrapper for run_async.
 
         Maintains backward compatibility with the original API.
         """
-        asyncio.run(self.run_async(year, limit, output_file, url_file))
+        asyncio.run(self.run_async(year, limit, output_file, url_file, history_file, only_new))
 
 
 def parse_args() -> argparse.Namespace:
@@ -559,9 +639,6 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Check posts from 2020 using sitemap
-  %(prog)s --base-url https://example.substack.com --year 2020
-
   # Check posts from a URL file
   %(prog)s --base-url https://example.substack.com --url-file posts.txt
 
@@ -570,8 +647,16 @@ Examples:
            --concurrency 20 --output my_report.csv
 
   # Limit to first 5 posts with verbose output
-  %(prog)s --base-url https://example.substack.com --year 2020 \\
+  %(prog)s --base-url https://example.substack.com --url-file posts.txt \\
            --limit 5 --verbose
+
+  # Track checked posts and only scan new ones on subsequent runs
+  %(prog)s --base-url https://example.substack.com --url-file posts.txt \\
+           --history-file checked_posts.json
+
+  # Only check posts not previously scanned
+  %(prog)s --base-url https://example.substack.com --url-file posts.txt \\
+           --history-file checked_posts.json --only-new
         """
     )
 
@@ -629,12 +714,28 @@ Examples:
         help='Enable verbose output'
     )
 
+    # History tracking arguments
+    parser.add_argument(
+        '--history-file', '-H',
+        help='Path to JSON file for tracking checked posts (enables incremental scanning)'
+    )
+    parser.add_argument(
+        '--only-new',
+        action='store_true',
+        help='Only check posts not in history (requires --history-file)'
+    )
+
     return parser.parse_args()
 
 
 def main():
     """Main entry point with CLI support."""
     args = parse_args()
+
+    # Validate arguments
+    if args.only_new and not args.history_file:
+        print("Error: --only-new requires --history-file to be specified")
+        sys.exit(1)
 
     checker = SubstackLinkChecker(
         base_url=args.base_url,
@@ -648,7 +749,9 @@ def main():
         year=args.year,
         limit=args.limit,
         output_file=args.output,
-        url_file=args.url_file
+        url_file=args.url_file,
+        history_file=args.history_file,
+        only_new=args.only_new
     )
 
 
