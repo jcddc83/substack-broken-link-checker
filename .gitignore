@@ -1,5 +1,16 @@
 __pycache__/
 *.pyc
 *.pyo
-*.csv
 .env
+
+# Generated files
+*.csv
+checked_posts.json
+unchecked_posts.txt
+logs/
+reports/
+
+# IDE
+.vscode/
+.idea/
+*.swp

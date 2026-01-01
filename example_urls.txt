@@ -1,0 +1,11 @@
+# Example Substack post URLs (one per line)
+# Replace these with your own post URLs from your Substack archive
+#
+# Ways to get your post URLs:
+# 1. Use the sitemap: python substack_link_checker.py --base-url https://YOUR.substack.com --year 2024
+# 2. Run compare_posts.py to find unchecked posts
+# 3. Manually copy from your archive page
+
+https://example.substack.com/p/my-first-post
+https://example.substack.com/p/another-great-article
+https://example.substack.com/p/weekly-roundup-jan-2024
