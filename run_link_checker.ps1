@@ -21,9 +21,9 @@ Write-Host "=========================================="
 Write-Host "`nStep 1: Finding new posts..."
 python compare_posts.py https://onion20.substack.com checked_posts.json
 
-# Step 2: Check the unchecked posts
+# Step 2: Check the unchecked posts (--only-new ensures we skip any already in history)
 Write-Host "`nStep 2: Checking unchecked posts for broken links..."
-python substack_link_checker.py --base-url https://onion20.substack.com --url-file unchecked_posts.txt --history-file checked_posts.json --output "reports\broken_links_$timestamp.csv" --verbose
+python substack_link_checker.py --base-url https://onion20.substack.com --url-file unchecked_posts.txt --history-file checked_posts.json --only-new --output "reports\broken_links_$timestamp.csv" --verbose
 
 Write-Host "`n=========================================="
 Write-Host "Completed: $(Get-Date)"
