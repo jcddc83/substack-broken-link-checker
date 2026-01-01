@@ -89,7 +89,8 @@ class SubstackLinkChecker:
         max_retries: int = 3,
         retry_delay: float = 1.0,
         verbose: bool = False,
-        skip_domains: Optional[List[str]] = None
+        skip_domains: Optional[List[str]] = None,
+        broken_domains: Optional[List[str]] = None
     ):
         """
         Initialize the link checker.
@@ -101,7 +102,8 @@ class SubstackLinkChecker:
             max_retries: Maximum retry attempts for transient failures
             retry_delay: Base delay between retries (doubles each attempt)
             verbose: Enable verbose output
-            skip_domains: List of domains to skip checking (e.g., ['wikipedia.org'])
+            skip_domains: List of domains to skip checking and assume OK (e.g., ['wikipedia.org'])
+            broken_domains: List of domains to auto-flag as broken without checking (e.g., ['local.example.com'])
         """
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
@@ -110,6 +112,7 @@ class SubstackLinkChecker:
         self.retry_delay = retry_delay
         self.verbose = verbose
         self.skip_domains = set(skip_domains) if skip_domains else set()
+        self.broken_domains = set(broken_domains) if broken_domains else set()
 
         # Synchronous session for sitemap/post fetching
         self.session = requests.Session()
@@ -128,7 +131,8 @@ class SubstackLinkChecker:
             'broken_links': 0,
             'retries': 0,
             'posts_skipped': 0,
-            'links_skipped': 0
+            'links_skipped': 0,
+            'links_auto_broken': 0
         }
 
         # History tracking
@@ -180,7 +184,7 @@ class SubstackLinkChecker:
         return unchecked
 
     def should_skip_domain(self, url: str) -> bool:
-        """Check if a URL's domain should be skipped."""
+        """Check if a URL's domain should be skipped (assumed OK)."""
         if not self.skip_domains:
             return False
         try:
@@ -189,6 +193,21 @@ class SubstackLinkChecker:
             # Check if domain matches or is a subdomain of any skip domain
             for skip_domain in self.skip_domains:
                 if domain == skip_domain or domain.endswith('.' + skip_domain):
+                    return True
+            return False
+        except Exception:
+            return False
+
+    def is_broken_domain(self, url: str) -> bool:
+        """Check if a URL's domain should be auto-flagged as broken."""
+        if not self.broken_domains:
+            return False
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+            # Check if domain matches or is a subdomain of any broken domain
+            for broken_domain in self.broken_domains:
+                if domain == broken_domain or domain.endswith('.' + broken_domain):
                     return True
             return False
         except Exception:
@@ -418,7 +437,13 @@ class SubstackLinkChecker:
 
         Returns: LinkCheckResult
         """
-        # Skip domains that block bots
+        # Auto-flag known broken domains without checking
+        if self.is_broken_domain(link):
+            self.stats['links_auto_broken'] += 1
+            self.stats['broken_links'] += 1
+            return LinkCheckResult(True, "Known broken domain")
+
+        # Skip domains that block bots (assume OK)
         if self.should_skip_domain(link):
             self.stats['links_skipped'] += 1
             return LinkCheckResult(False, "Skipped (bot-blocking domain)")
@@ -533,7 +558,8 @@ class SubstackLinkChecker:
         print("SUMMARY")
         print(f"{'=' * 50}")
         print(f"Total links checked: {self.stats['total_links_checked']}")
-        print(f"Links skipped (bot-blockers): {self.stats['links_skipped']}")
+        print(f"Links skipped (assumed OK): {self.stats['links_skipped']}")
+        print(f"Links auto-flagged broken: {self.stats['links_auto_broken']}")
         print(f"Cache hits: {self.stats['cache_hits']}")
         print(f"Retries performed: {self.stats['retries']}")
         print(f"Broken links found: {len(self.results)}")
@@ -685,6 +711,11 @@ Examples:
   # Only check posts not previously scanned
   %(prog)s --base-url https://example.substack.com --url-file posts.txt \\
            --history-file checked_posts.json --only-new
+
+  # Skip bot-blocking domains and auto-flag known broken domains
+  %(prog)s --base-url https://example.substack.com --url-file posts.txt \\
+           --skip-domains wikipedia.org ko-fi.com \\
+           --broken-domains local.example.com defunct.site.com
         """
     )
 
@@ -756,7 +787,13 @@ Examples:
         '--skip-domains', '-S',
         nargs='+',
         default=['wikipedia.org', 'ko-fi.com'],
-        help='Domains to skip checking (default: wikipedia.org ko-fi.com). Use --skip-domains none to check all.'
+        help='Domains to skip checking and assume OK (default: wikipedia.org ko-fi.com). Use --skip-domains none to check all.'
+    )
+    parser.add_argument(
+        '--broken-domains', '-B',
+        nargs='+',
+        default=[],
+        help='Domains to auto-flag as broken without checking (e.g., local.example.com)'
     )
 
     return parser.parse_args()
@@ -773,6 +810,8 @@ def main():
 
     # Handle skip_domains: 'none' means check all domains
     skip_domains = None if args.skip_domains == ['none'] else args.skip_domains
+    # Handle broken_domains: empty list means no domains auto-flagged
+    broken_domains = args.broken_domains if args.broken_domains else None
 
     checker = SubstackLinkChecker(
         base_url=args.base_url,
@@ -780,7 +819,8 @@ def main():
         concurrency=args.concurrency,
         max_retries=args.max_retries,
         verbose=args.verbose,
-        skip_domains=skip_domains
+        skip_domains=skip_domains,
+        broken_domains=broken_domains
     )
 
     checker.run(
