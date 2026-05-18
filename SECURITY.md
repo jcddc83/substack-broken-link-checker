@@ -5,8 +5,12 @@
 If you discover a security vulnerability in this project, please report it
 privately rather than opening a public issue.
 
-- Preferred: use GitHub's [private vulnerability reporting](https://github.com/jcddc83/substack-broken-link-checker/security/advisories/new).
-- Alternatively, open a minimal public issue requesting a private contact channel — do not include exploit details.
+- Preferred: use GitHub's [private vulnerability reporting](https://github.com/jcddc83/substack-broken-link-checker/security/advisories/new)
+  if it is enabled on this repository.
+- If that link returns a 404 (private reporting not enabled), open a
+  **minimal** public issue asking the maintainer for a private contact
+  channel — do **not** include exploit details, proof-of-concept code, or
+  any session cookies in the public issue.
 
 Please include:
 
