@@ -59,12 +59,21 @@ If Substack blocks your requests or you need to check paywalled content, use you
 1. Log into your Substack in a browser
 2. Open Developer Tools (F12) → Application → Cookies
 3. Find the `substack.sid` cookie and copy its value
-4. Use it with the `--cookie` flag:
+4. Provide it via the `SUBSTACK_COOKIE` environment variable (recommended) or the `--cookie` flag:
 
 ```bash
+# Recommended: env var (keeps cookie out of shell history / ps aux)
+export SUBSTACK_COOKIE="your-substack-sid-cookie-value"
+python substack_link_checker.py --base-url https://YOUR.substack.com --year 2024
+
+# Alternative: --cookie flag (visible in process listings)
 python substack_link_checker.py --base-url https://YOUR.substack.com --year 2024 \
     --cookie "your-substack-sid-cookie-value"
 ```
+
+**Security:** Treat the session cookie like a password. Prefer the env var
+so it does not end up in your shell history or in `ps aux`. See
+[SECURITY.md](SECURITY.md) for full guidance.
 
 **Note:** Your session cookie expires after a few weeks. If you start getting 403 errors, get a fresh cookie from your browser.
 

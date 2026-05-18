@@ -11,13 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pyproject.toml` making the project pip-installable with a
   `substack-link-checker` console entry point.
 - GitHub Actions CI workflow (`.github/workflows/ci.yml`) running ruff
-  lint, multi-version Python smoke tests, and a build step.
+  lint, multi-version Python smoke tests, a real `pytest` suite, and a
+  build step.
+- Initial `pytest` test suite (`tests/`) covering domain filtering,
+  CSV report generation, history persistence, the
+  `load_domains_from_file` helper, and cookie-handling guarantees.
 - `SECURITY.md` documenting vulnerability reporting and safe handling of
   Substack session cookies.
 - `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
 - Issue and pull request templates under `.github/`.
 - Dependabot configuration for weekly dependency and Actions updates.
 - `.env.example` documenting the supported environment variables.
+
+### Security
+- `SUBSTACK_COOKIE` environment variable is now supported as a safer
+  alternative to the `--cookie` CLI flag (which leaks the cookie into
+  shell history and `ps aux`). README and `SECURITY.md` updated to
+  recommend the env-var path.
 
 ### Fixed
 - Corrected the clone URL in `README.md` (was `substack-link-checker`,

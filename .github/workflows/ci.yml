@@ -44,7 +44,6 @@ jobs:
           python substack_link_checker.py --help
       - name: Run tests
         run: pytest -q
-        continue-on-error: true
 
   build:
     runs-on: ubuntu-latest
