@@ -31,11 +31,11 @@ Write-Host "=========================================="
 
 # Step 1: Compare sitemap against history to find new posts
 Write-Host "`nStep 1: Finding new posts..."
-python compare_posts.py $SUBSTACK_URL checked_posts.json
+python -m substack_link_checker compare $SUBSTACK_URL checked_posts.json
 
 # Step 2: Check the unchecked posts (--only-new ensures we skip any already in history)
 Write-Host "`nStep 2: Checking unchecked posts for broken links..."
-python substack_link_checker.py --base-url $SUBSTACK_URL --url-file unchecked_posts.txt --history-file checked_posts.json --only-new --output "reports\broken_links_$timestamp.csv" --verbose
+python -m substack_link_checker check --base-url $SUBSTACK_URL --url-file unchecked_posts.txt --history-file checked_posts.json --only-new --output "reports\broken_links_$timestamp.csv" --verbose
 
 Write-Host "`n=========================================="
 Write-Host "Completed: $(Get-Date)"
