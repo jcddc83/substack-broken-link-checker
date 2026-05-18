@@ -3,14 +3,11 @@
 Fetch post URLs from a Substack archive page.
 
 Use this as a fallback when the sitemap doesn't work or you need to filter
-by specific criteria. The main script's --year option is usually easier.
-
-Usage:
-    python fetch_archive_urls.py https://example.substack.com [year]
-    python fetch_archive_urls.py https://example.substack.com 2024
+by specific criteria. The main `check` subcommand's --year option is
+usually easier.
 """
 
-import sys
+import argparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -72,25 +69,39 @@ def fetch_archive_urls(base_url, year=None):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python fetch_archive_urls.py <substack-url> [year]")
-        print("Example: python fetch_archive_urls.py https://example.substack.com 2024")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Scrape post URLs from a Substack's /archive page. Fallback "
+            "when the sitemap is missing or incomplete; prefer the "
+            "`check --year` flow when it works."
+        ),
+    )
+    parser.add_argument(
+        "base_url",
+        help="Base URL of the Substack (e.g. https://example.substack.com)",
+    )
+    parser.add_argument(
+        "year",
+        nargs="?",
+        type=int,
+        default=None,
+        help="Optional year filter (matches against URL slug and link text).",
+    )
+    args = parser.parse_args()
 
-    base_url = sys.argv[1]
-    year = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    base_url = args.base_url
+    year = args.year
 
     urls = fetch_archive_urls(base_url, year)
 
     if urls:
-        # Save to file
         filename = f"archive_urls{'_' + str(year) if year else ''}.txt"
         with open(filename, "w") as f:
             for url in urls:
                 f.write(url + "\n")
         print(f"\nSaved to: {filename}")
         print("\nTo check these posts, run:")
-        print(f"  python substack_link_checker.py --base-url {base_url} --url-file {filename}")
+        print(f"  substack-link-checker check --base-url {base_url} --url-file {filename}")
 
 
 if __name__ == "__main__":

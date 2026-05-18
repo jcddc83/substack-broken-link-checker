@@ -63,3 +63,19 @@ def test_version_flag(capsys):
         cli.main(["--version"])
     assert exc.value.code == 0
     assert __version__ in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("subcommand", ["compare", "fetch-archive", "demo"])
+def test_subcommand_help_exits_zero(subcommand, capsys):
+    """`substack-link-checker <sub> --help` should print usage, exit 0.
+
+    Regression test for PR #3 Codex review P2: previously these
+    subcommands read sys.argv[1] directly and treated `--help` as a
+    positional URL, either crashing or silently ignoring the flag.
+    """
+    with pytest.raises(SystemExit) as exc:
+        cli.main([subcommand, "--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "usage" in out.lower()
+    assert f"substack-link-checker {subcommand}" in out

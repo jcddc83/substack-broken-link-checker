@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Compare sitemap posts against checked history."""
 
+import argparse
 import json
-import sys
 import xml.etree.ElementTree as ET
 
 import requests
@@ -36,13 +36,28 @@ def load_history(history_file):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python compare_posts.py <substack-url> [history-file]")
-        print("Example: python compare_posts.py https://example.substack.com checked_posts.json")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Compare your Substack sitemap against a checked-posts history "
+            "file and list any posts not yet checked. Also writes the "
+            "unchecked URLs to unchecked_posts.txt for use with "
+            "`substack-link-checker check --url-file`."
+        ),
+    )
+    parser.add_argument(
+        "base_url",
+        help="Base URL of the Substack (e.g. https://example.substack.com)",
+    )
+    parser.add_argument(
+        "history_file",
+        nargs="?",
+        default="checked_posts.json",
+        help="Path to the history file (default: checked_posts.json)",
+    )
+    args = parser.parse_args()
 
-    base_url = sys.argv[1]
-    history_file = sys.argv[2] if len(sys.argv) > 2 else "checked_posts.json"
+    base_url = args.base_url
+    history_file = args.history_file
 
     print(f"Fetching posts from {base_url}/sitemap.xml...")
     sitemap_posts = get_sitemap_posts(base_url)

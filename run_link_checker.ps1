@@ -14,6 +14,11 @@ $PROJECT_DIR = "C:\path\to\substack-link-checker"      # Where you cloned this r
 
 Set-Location $PROJECT_DIR
 
+# Put src/ on PYTHONPATH so `python -m substack_link_checker` resolves the
+# package directly from a `git clone` checkout, without requiring the user
+# to have run `pip install -e .` first.
+$env:PYTHONPATH = (Join-Path $PROJECT_DIR "src") + ";" + $env:PYTHONPATH
+
 # Create logs and reports directories if they don't exist
 New-Item -ItemType Directory -Force -Path "logs" | Out-Null
 New-Item -ItemType Directory -Force -Path "reports" | Out-Null

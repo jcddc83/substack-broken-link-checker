@@ -61,6 +61,15 @@ async def demo_check_links():
 
 def main():
     """Run the demo."""
+    import argparse
+
+    argparse.ArgumentParser(
+        description=(
+            "Self-contained demo: runs the link checker against a handful "
+            "of known-good and known-bad URLs. Takes no arguments. Useful "
+            "for verifying your install before pointing at a real Substack."
+        ),
+    ).parse_args()
     asyncio.run(demo_check_links())
 
 
