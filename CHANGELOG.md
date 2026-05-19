@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-19
+
+Post-v1.0.0 repo-hygiene release. Adds packaging, CI, tests, security
+hardening, automation, and docs without changing the link-checker's
+runtime behavior. See the README's "Migrating from v1.0.0" section for
+the CLI invocation changes.
+
 ### Added
 - `pyproject.toml` making the project pip-installable with a
   `substack-link-checker` console entry point.
@@ -61,6 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Corrected the clone URL in `README.md` (was `substack-link-checker`,
   now `substack-broken-link-checker`).
+- Troubleshooting section's code blocks now use the new
+  `substack-link-checker check ...` invocations instead of the
+  pre-refactor `python substack_link_checker.py ...` form.
 
 ## [1.0.0] - 2026-01-01
 

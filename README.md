@@ -128,9 +128,9 @@ your Substack — some accounts only expose a single combined sitemap.
 Fall back to scraping the archive page:
 
 ```bash
-python fetch_archive_urls.py https://YOUR.substack.com 2024
+substack-link-checker fetch-archive https://YOUR.substack.com 2024
 # Produces archive_urls_2024.txt
-python substack_link_checker.py --base-url https://YOUR.substack.com \
+substack-link-checker check --base-url https://YOUR.substack.com \
     --url-file archive_urls_2024.txt
 ```
 
@@ -140,7 +140,7 @@ The target site is rate-limiting or geo-blocking the checker, not
 actually broken. Add it to `--skip-domains` so it's assumed OK:
 
 ```bash
-python substack_link_checker.py ... --skip-domains rate-limited.example.com
+substack-link-checker check ... --skip-domains rate-limited.example.com
 ```
 
 For a recurring list, put one domain per line in a file and pass
@@ -153,7 +153,7 @@ longer accepts by default. Usually the right call is to flag the
 domain as broken (it really is unreachable from a modern client):
 
 ```bash
-python substack_link_checker.py ... --broken-domains old-tls.example.com
+substack-link-checker check ... --broken-domains old-tls.example.com
 ```
 
 ### Many `Soft 404 (page title indicates error)` results that look fine
