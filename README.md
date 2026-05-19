@@ -29,12 +29,17 @@ Checking broken links in your newsletter archive shouldn't cost $100+/month for 
 # Install (provides the `substack-link-checker` CLI)
 pip install git+https://github.com/jcddc83/substack-broken-link-checker.git
 
+# Smoke-test your install against a handful of known-good/bad URLs
+substack-link-checker demo
+
 # Check all posts from 2024
 substack-link-checker check --base-url https://YOUR.substack.com --year 2024
 
 # Check posts from a file
 substack-link-checker check --base-url https://YOUR.substack.com --url-file posts.txt
 ```
+
+Confirm the installed version with `substack-link-checker --version`.
 
 ## Installation
 
@@ -80,9 +85,11 @@ because its name collides with the new package — use
 `substack-link-checker check ...` or `python -m substack_link_checker check ...`
 instead.
 
-## Authentication (Optional)
+## Authentication
 
-If Substack blocks your requests or you need to check paywalled content, use your session cookie:
+Optional in principle, but **usually needed in practice** — Substack's
+bot protection rejects most unauthenticated archive scans. Use your
+session cookie:
 
 1. Log into your Substack in a browser
 2. Open Developer Tools (F12) → Application → Cookies
@@ -105,6 +112,122 @@ so it does not end up in your shell history or in `ps aux`. See
 
 **Note:** Your session cookie expires after a few weeks. If you start getting 403 errors, get a fresh cookie from your browser.
 
+## Usage
+
+### Basic Usage
+
+```bash
+# Check posts from a specific year (uses sitemap)
+substack-link-checker check --base-url https://example.substack.com --year 2024
+
+# Check posts from a URL file
+substack-link-checker check --base-url https://example.substack.com --url-file posts.txt
+
+# Verbose output with custom report name
+substack-link-checker check --base-url https://example.substack.com --year 2024 \
+    --verbose --output december_report.csv
+```
+
+### Incremental Scanning (Recommended)
+
+Track which posts you've already checked to avoid re-scanning:
+
+```bash
+# First run: checks all posts, saves history
+substack-link-checker check --base-url https://example.substack.com --year 2024 \
+    --history-file checked_posts.json
+
+# Subsequent runs: only check new posts
+substack-link-checker check --base-url https://example.substack.com --year 2024 \
+    --history-file checked_posts.json --only-new
+```
+
+### Domain Filtering
+
+```bash
+# Skip domains that block bots (assumed OK)
+substack-link-checker check ... --skip-domains wikipedia.org
+
+# Auto-flag domains as broken without checking
+substack-link-checker check ... --broken-domains old.defunct-site.com
+```
+
+### Finding Unchecked Posts
+
+```bash
+# Compare your sitemap against history to find unchecked posts
+substack-link-checker compare https://example.substack.com checked_posts.json
+# Outputs: unchecked_posts.txt
+
+# Then check just those posts
+substack-link-checker check --base-url https://example.substack.com \
+    --url-file unchecked_posts.txt --history-file checked_posts.json
+```
+
+### Importing Previous Results
+
+If you have an existing Excel or CSV file from a prior scan (or another
+tool), `import` extracts unique post URLs into the history file so
+`--only-new` will skip them on future runs.
+
+The input file must have a column whose header contains "Post URL"
+(case-insensitive, also matches `post_url`). Other columns are ignored.
+
+```bash
+# From an Excel report
+substack-link-checker import previous_report.xlsx --history-file checked_posts.json
+
+# Or from a CSV
+substack-link-checker import previous_report.csv --history-file checked_posts.json
+```
+
+Excel imports require `pandas` and `openpyxl`, which are installed
+automatically as part of the package.
+
+## Example Output (`--verbose`)
+
+```
+$ substack-link-checker check --base-url https://example.substack.com --year 2024 --verbose
+
+Substack Broken Link Checker
+==================================================
+Base URL: https://example.substack.com
+Concurrency: 10
+Max retries: 3
+Input: Sitemap
+Year: 2024
+==================================================
+
+Found 45 posts from 2024
+[1/45] Processing: https://example.substack.com/p/my-first-post
+  Checking 12 links (10 new, 2 cached)...
+  Found 1 broken links in this post
+
+[2/45] Processing: https://example.substack.com/p/another-post
+  Checking 8 links (6 new, 2 cached)...
+  Found 0 broken links in this post
+...
+
+Completed in 34.2 seconds
+
+==================================================
+SUMMARY
+==================================================
+Total links checked: 234
+Links skipped (assumed OK): 8
+Links auto-flagged broken: 0
+Cache hits: 45
+Retries performed: 3
+Broken links found: 5
+
+Generating report: broken_links_report.csv
+Report generated with 5 broken links
+```
+
+Without `--verbose`, the per-post "Checking N links…" and "Found N
+broken links in this post" lines are suppressed; the header, progress
+counter, and SUMMARY block are always shown.
+
 ## Troubleshooting
 
 Common failure modes and how to fix them:
@@ -114,7 +237,7 @@ Common failure modes and how to fix them:
 Substack's bot protection is rejecting unauthenticated requests. In
 order of likelihood:
 
-1. Set `SUBSTACK_COOKIE` (see [Authentication](#authentication-optional)
+1. Set `SUBSTACK_COOKIE` (see [Authentication](#authentication)
    above) so you're requesting as a logged-in user.
 2. If you had a cookie set: it has probably expired (Substack rotates
    session cookies every few weeks). Grab a fresh one from DevTools.
@@ -176,99 +299,10 @@ the previous run. The history file is the source of truth for which
 posts have already been checked; without it `--only-new` has nothing
 to compare against.
 
-## Usage
+## `check` Subcommand Options
 
-### Basic Usage
-
-```bash
-# Check posts from a specific year (uses sitemap)
-substack-link-checker check --base-url https://example.substack.com --year 2024
-
-# Check posts from a URL file
-substack-link-checker check --base-url https://example.substack.com --url-file posts.txt
-
-# Verbose output with custom report name
-substack-link-checker check --base-url https://example.substack.com --year 2024 \
-    --verbose --output december_report.csv
-```
-
-### Incremental Scanning (Recommended)
-
-Track which posts you've already checked to avoid re-scanning:
-
-```bash
-# First run: checks all posts, saves history
-substack-link-checker check --base-url https://example.substack.com --year 2024 \
-    --history-file checked_posts.json
-
-# Subsequent runs: only check new posts
-substack-link-checker check --base-url https://example.substack.com --year 2024 \
-    --history-file checked_posts.json --only-new
-```
-
-### Domain Filtering
-
-```bash
-# Skip domains that block bots (assumed OK)
-substack-link-checker check ... --skip-domains wikipedia.org
-
-# Auto-flag domains as broken without checking
-substack-link-checker check ... --broken-domains old.defunct-site.com
-```
-
-### Finding Unchecked Posts
-
-```bash
-# Compare your sitemap against history to find unchecked posts
-substack-link-checker compare https://example.substack.com checked_posts.json
-# Outputs: unchecked_posts.txt
-
-# Then check just those posts
-substack-link-checker check --base-url https://example.substack.com \
-    --url-file unchecked_posts.txt --history-file checked_posts.json
-```
-
-## Example Output
-
-```
-$ substack-link-checker check --base-url https://example.substack.com --year 2024
-
-Substack Broken Link Checker
-==================================================
-Base URL: https://example.substack.com
-Concurrency: 10
-Max retries: 3
-Input: Sitemap
-Year: 2024
-==================================================
-
-Found 45 posts from 2024
-[1/45] Processing: https://example.substack.com/p/my-first-post
-  Checking 12 links (10 new, 2 cached)...
-  Found 1 broken links in this post
-
-[2/45] Processing: https://example.substack.com/p/another-post
-  Checking 8 links (6 new, 2 cached)...
-  Found 0 broken links in this post
-...
-
-Completed in 34.2 seconds
-
-==================================================
-SUMMARY
-==================================================
-Total links checked: 234
-Links skipped (assumed OK): 8
-Links auto-flagged broken: 0
-Cache hits: 45
-Retries performed: 3
-Broken links found: 5
-
-Generating report: broken_links_report.csv
-Report generated with 5 broken links
-```
-
-## CLI Options
+The options below apply to `substack-link-checker check`. For other
+subcommands, run `substack-link-checker <subcommand> --help`.
 
 | Option | Short | Description |
 |--------|-------|-------------|
@@ -289,6 +323,9 @@ Report generated with 5 broken links
 | `--verbose` | `-v` | Show detailed progress |
 | `--limit` | `-l` | Max posts to check |
 
+Top-level flags: `--version` prints the installed version; `--help`
+lists all subcommands.
+
 ## Subcommands
 
 | Command | Purpose |
@@ -298,15 +335,27 @@ Report generated with 5 broken links
 | `substack-link-checker import` | Import previous results from Excel/CSV into history |
 | `substack-link-checker fetch-archive` | Extract URLs from the `/archive` page (fallback when the sitemap doesn't work) |
 | `substack-link-checker demo` | Self-contained demo against a handful of known-good/bad URLs |
-| `run_link_checker.ps1` | Windows Task Scheduler automation (PowerShell) |
+
+### Scheduled / automated runs
+
+`run_link_checker.ps1` (at the repo root) is a PowerShell wrapper meant
+for Windows Task Scheduler. It runs `compare` to find new posts, then
+`check` to scan them, writing reports to `reports/` with a timestamped
+filename. Set `$SUBSTACK_URL` and `$PROJECT_DIR` at the top of the
+script before first use.
 
 ## Output
 
-The tool generates a CSV report with columns:
-- **Post Title**: Title of the post containing the broken link
-- **Post URL**: URL of the post
-- **Broken Link**: The broken URL
-- **Error Type**: What went wrong (HTTP 404, DNS Failure, SSL Error, etc.)
+The tool generates a CSV report with the following columns (header row
+is written by `csv.DictWriter`, so the names below are exactly what
+appears in the file):
+
+| Column | Description |
+|---|---|
+| `post_title` | Title of the post containing the broken link |
+| `post_url` | URL of the post |
+| `broken_link` | The broken URL |
+| `error_type` | What went wrong (e.g. `HTTP 404`, `DNS Failure`, `SSL Error`) |
 
 ## Error Types Detected
 
