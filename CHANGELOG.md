@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pushing a `v*.*.*` tag, builds the sdist and wheel from
   `pyproject.toml` and attaches them to the GitHub Release. Verifies the
   tag matches the project version to prevent mismatched artifacts.
+- CodeQL workflow (`.github/workflows/codeql.yml`) running GitHub's
+  `security-and-quality` Python query suite on every push, PR, and
+  weekly. Findings surface under the repo's Security tab.
+- `pre-commit` config (`.pre-commit-config.yaml`) running ruff,
+  trailing-whitespace / EOF / YAML / TOML / merge-conflict / large-file
+  / private-key hooks before each commit. `CONTRIBUTING.md` updated
+  with install instructions.
 
 ### Security
 - `SUBSTACK_COOKIE` environment variable is now supported as a safer
