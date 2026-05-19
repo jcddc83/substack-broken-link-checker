@@ -6,7 +6,9 @@ Tests the link checker against various URLs to demonstrate error detection.
 """
 
 import asyncio
+
 import aiohttp
+
 from substack_link_checker import SubstackLinkChecker
 
 
@@ -24,11 +26,7 @@ async def demo_check_links():
     ]
 
     # Initialize checker (base_url doesn't matter for direct link tests)
-    checker = SubstackLinkChecker(
-        base_url="https://example.substack.com",
-        timeout=10,
-        verbose=True
-    )
+    checker = SubstackLinkChecker(base_url="https://example.substack.com", timeout=10, verbose=True)
 
     print("=" * 60)
     print("SUBSTACK LINK CHECKER - DEMO")
@@ -38,10 +36,8 @@ async def demo_check_links():
     # Create aiohttp session for checking
     connector = aiohttp.TCPConnector(limit=5, ssl=True)
     async with aiohttp.ClientSession(
-        connector=connector,
-        headers=checker.DEFAULT_HEADERS
+        connector=connector, headers=checker.DEFAULT_HEADERS
     ) as session:
-
         for url, description in test_urls:
             print(f"Testing: {description}")
             print(f"  URL: {url}")
@@ -58,7 +54,9 @@ async def demo_check_links():
     print("Demo complete!")
     print()
     print("To check your own Substack, run:")
-    print("  python substack_link_checker.py --base-url https://YOUR-SUBSTACK.substack.com --year 2024")
+    print(
+        "  python substack_link_checker.py --base-url https://YOUR-SUBSTACK.substack.com --year 2024"
+    )
 
 
 def main():
@@ -66,5 +64,5 @@ def main():
     asyncio.run(demo_check_links())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/jcddc83/substack-broken-link-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/jcddc83/substack-broken-link-checker/actions/workflows/ci.yml)
 
 A fast, async Python tool to find broken links in your Substack newsletter archive.
 
@@ -38,9 +39,15 @@ python substack_link_checker.py --base-url https://YOUR.substack.com --url-file 
 ## Installation
 
 ```bash
-git clone https://github.com/jcddc83/substack-link-checker.git
-cd substack-link-checker
+git clone https://github.com/jcddc83/substack-broken-link-checker.git
+cd substack-broken-link-checker
 pip install -r requirements.txt
+```
+
+Or install as a package (provides a `substack-link-checker` CLI):
+
+```bash
+pip install git+https://github.com/jcddc83/substack-broken-link-checker.git
 ```
 
 **Requirements**: Python 3.8+
@@ -52,12 +59,21 @@ If Substack blocks your requests or you need to check paywalled content, use you
 1. Log into your Substack in a browser
 2. Open Developer Tools (F12) → Application → Cookies
 3. Find the `substack.sid` cookie and copy its value
-4. Use it with the `--cookie` flag:
+4. Provide it via the `SUBSTACK_COOKIE` environment variable (recommended) or the `--cookie` flag:
 
 ```bash
+# Recommended: env var (keeps cookie out of shell history / ps aux)
+export SUBSTACK_COOKIE="your-substack-sid-cookie-value"
+python substack_link_checker.py --base-url https://YOUR.substack.com --year 2024
+
+# Alternative: --cookie flag (visible in process listings)
 python substack_link_checker.py --base-url https://YOUR.substack.com --year 2024 \
     --cookie "your-substack-sid-cookie-value"
 ```
+
+**Security:** Treat the session cookie like a password. Prefer the env var
+so it does not end up in your shell history or in `ps aux`. See
+[SECURITY.md](SECURITY.md) for full guidance.
 
 **Note:** Your session cookie expires after a few weeks. If you start getting 403 errors, get a fresh cookie from your browser.
 
@@ -209,4 +225,4 @@ MIT License - see [LICENSE](LICENSE) file.
 
 ## Contributing
 
-Issues and pull requests welcome at [github.com/jcddc83/substack-link-checker](https://github.com/jcddc83/substack-link-checker).
+Issues and pull requests welcome at [github.com/jcddc83/substack-broken-link-checker](https://github.com/jcddc83/substack-broken-link-checker). See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and [SECURITY.md](SECURITY.md) for reporting security issues.
