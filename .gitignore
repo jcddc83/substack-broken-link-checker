@@ -16,6 +16,9 @@ unchecked_posts.txt
 logs/
 reports/
 
+# Claude Code session scratchpad
+scratchpad/
+
 # IDE
 .vscode/
 .idea/
