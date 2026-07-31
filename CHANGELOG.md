@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The run no longer dies on the first broken link it finds when stdout is
+  redirected on Windows. A redirected stream falls back to the locale
+  encoding (cp1252 on most machines), which cannot encode the `✗` mark used
+  to flag a broken link, so `UnicodeEncodeError` killed the process — meaning
+  the checker only survived runs in which it found nothing wrong, and a
+  scheduled job could appear healthy for weeks while producing nothing. The
+  CLI now configures stdout and stderr for UTF-8 with `errors="replace"`
+  before any subcommand writes output.
+
 ## [1.1.0] - 2026-05-19
 
 Post-v1.0.0 repo-hygiene release. Adds packaging, CI, tests, security
