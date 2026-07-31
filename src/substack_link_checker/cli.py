@@ -15,6 +15,7 @@ import sys
 from typing import List, Optional
 
 from . import __version__, _cli_check, compare, demo, fetch_archive, import_history
+from ._console import configure_stdio
 
 SUBCOMMANDS = {
     "check": (
@@ -42,6 +43,10 @@ SUBCOMMANDS = {
 
 def main(argv: Optional[List[str]] = None) -> None:
     """Top-level entry point: dispatch to the chosen subcommand."""
+    # Before any subcommand writes to the console. Every entry point reaches
+    # the console through here, so this is the one place that needs it.
+    configure_stdio()
+
     if argv is None:
         argv = sys.argv[1:]
 
