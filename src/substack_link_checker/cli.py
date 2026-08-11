@@ -2,6 +2,7 @@
 
 Usage:
     substack-link-checker check ...        # run the link checker
+    substack-link-checker triage ...       # group a report by the work it implies
     substack-link-checker compare ...      # diff sitemap vs history
     substack-link-checker import ...       # import previous results from Excel/CSV
     substack-link-checker fetch-archive ...# scrape archive page for post URLs
@@ -14,13 +15,17 @@ import argparse
 import sys
 from typing import List, Optional
 
-from . import __version__, _cli_check, compare, demo, fetch_archive, import_history
+from . import __version__, _cli_check, compare, demo, fetch_archive, import_history, triage
 from ._console import configure_stdio
 
 SUBCOMMANDS = {
     "check": (
         "Scan a Substack archive for broken links (the main command).",
         _cli_check.main,
+    ),
+    "triage": (
+        "Group a report's failures by the work each one implies.",
+        triage.main,
     ),
     "compare": (
         "Compare your Substack sitemap against a checked-posts history file.",

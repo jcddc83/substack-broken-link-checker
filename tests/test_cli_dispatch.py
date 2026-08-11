@@ -65,7 +65,7 @@ def test_version_flag(capsys):
     assert __version__ in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("subcommand", ["compare", "fetch-archive", "demo"])
+@pytest.mark.parametrize("subcommand", ["compare", "fetch-archive", "demo", "triage"])
 def test_subcommand_help_exits_zero(subcommand, capsys):
     """`substack-link-checker <sub> --help` should print usage, exit 0.
 

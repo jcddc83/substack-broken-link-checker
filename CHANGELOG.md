@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`triage` subcommand.** Groups a report's failures by the work each one
+  implies, which is a different axis from how much to trust them: a dead
+  target and a mangled `href` are both `broken`, but one needs a replacement
+  link and the other needs the post edited. Detects URLs concatenated in a
+  post's HTML and suggests the leading half as the fix, without mistaking
+  Wayback and Library of Congress archive URLs — which legitimately embed a
+  second `http://` in their path — for concatenations.
+- `triage --retired-hosts <file>` takes hostnames you know are retired. A
+  retired subdomain often serves a mismatched certificate, so the check aborts
+  before reading a status and files the row *inconclusive* when it is really
+  dead. Only the publisher knows which hosts those are.
+
 ## [1.2.0] - 2026-09-17
 
 Failed checks are now sorted by how much you should trust them, so the report
