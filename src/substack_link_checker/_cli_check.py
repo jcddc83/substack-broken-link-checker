@@ -83,8 +83,11 @@ Examples:
     parser.add_argument(
         "--output",
         "-o",
-        default="broken_links_report.csv",
-        help="Output CSV filename (default: broken_links_report.csv)",
+        default=None,
+        help=(
+            "Output CSV filename (default: broken_links_report_<timestamp>.csv, "
+            "so a scheduled run does not overwrite the previous report)"
+        ),
     )
     parser.add_argument(
         "--concurrency",

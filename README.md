@@ -304,6 +304,24 @@ Report generated: 5 broken, 6 blocked, 1 inconclusive
 | `substack-link-checker demo` | Self-contained demo against a handful of known-good/bad URLs |
 | `run_link_checker.ps1` | Windows Task Scheduler automation (PowerShell) |
 
+## Running it on a schedule
+
+`run_link_checker.ps1` drives a monthly Task Scheduler run. Copy
+`secrets.ps1.example` to `secrets.ps1` (gitignored) and fill it in — that file
+holds your Substack URL, your cookie if you need one, and the alert
+credentials, so nothing personal ends up in a tracked file.
+
+**Set up the failure alerts.** A scheduled run that fails silently is worse
+than no scheduled run, because "no broken links this month" and "the run died
+on its first post" look identical from the outside. With `NOTIFY_EMAIL` and
+`NOTIFY_PASSWORD` set, a failed run emails you — and calls out an expired
+session cookie specifically, since that is the failure that recurs. Any SMTP
+server works via `NOTIFY_SMTP_HOST` / `NOTIFY_SMTP_PORT`; it defaults to Gmail,
+which needs an App Password rather than your account password.
+
+Reports are written with a timestamped filename by default, so each run's
+results survive rather than overwriting the last.
+
 ## Output
 
 The tool generates a CSV report with these columns, sorted most actionable first:
