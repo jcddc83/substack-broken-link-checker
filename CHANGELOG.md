@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- CI now runs the test suite on Windows as well as Linux. The tool's only
+  real deployment is a Windows scheduled task, and its worst bug to date was
+  Windows-only — the regression tests guarding it could not prove anything on
+  a Linux-only matrix.
+
 ### Fixed
 - The run no longer dies on the first broken link it finds when stdout is
   redirected on Windows. A redirected stream falls back to the locale

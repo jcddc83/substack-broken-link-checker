@@ -9,12 +9,19 @@ build/
 dist/
 *.egg
 
+# Virtualenvs
+.venv/
+venv/
+
 # Generated files
 *.csv
 checked_posts.json
 unchecked_posts.txt
 logs/
 reports/
+# Written by `fetch-archive`; these are lists of your own post URLs, which
+# are not something to commit to a shared repo.
+archive_urls*.txt
 
 # IDE
 .vscode/
