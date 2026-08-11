@@ -7,13 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-17
+
+Failed checks are now sorted by how much you should trust them, so the report
+is a work list rather than a pile to triage by hand.
+
 ### Added
+- **Failure classification.** Every failed check is now categorised as
+  `broken` (the page is genuinely gone), `blocked` (the server refused us —
+  the link is probably fine) or `inconclusive` (a timeout or 5xx, which says
+  more about the moment than about the link). Measured across four months of
+  real reports, 49.6% of failures were HTTP 403 and 11.2% were HTTP 429
+  against only 12.7% genuine 404s — so reporting everything as "broken" made
+  a report that was roughly seven-eighths noise.
+- Malformed addresses — two URLs concatenated in a post's HTML, so the
+  hostname contains a space — are detected without a network call and
+  reported as broken. The target is fine; the `href` is not.
+- `CATEGORY_BROKEN`, `CATEGORY_BLOCKED`, `CATEGORY_INCONCLUSIVE` and
+  `classify_error` are exported from the package for downstream use.
 - CI now runs the test suite on Windows as well as Linux. The tool's only
   real deployment is a Windows scheduled task, and its worst bug to date was
   Windows-only — the regression tests guarding it could not prove anything on
   a Linux-only matrix.
 
+### Changed
+- **The CSV gains a leading `category` column**, and rows are sorted most
+  actionable first. If you parse the report by column position rather than by
+  header name, this will shift your indices.
+- The console summary breaks failures down by category instead of printing a
+  single "Broken links found" total.
+
 ### Fixed
+- Post titles are no longer blank when a post renders an empty `<h1>`. The
+  fallback to `<title>` only triggered on a *missing* tag, not an empty one.
 - The run no longer dies on the first broken link it finds when stdout is
   redirected on Windows. A redirected stream falls back to the locale
   encoding (cp1252 on most machines), which cannot encode the `✗` mark used
@@ -119,5 +145,7 @@ for the full announcement.
 - Complete `README.md` / `USAGE.md` rewrite with security considerations
   and expanded troubleshooting.
 
-[Unreleased]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jcddc83/substack-broken-link-checker/releases/tag/v1.0.0

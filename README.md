@@ -245,11 +245,11 @@ Year: 2024
 Found 45 posts from 2024
 [1/45] Processing: https://example.substack.com/p/my-first-post
   Checking 12 links (10 new, 2 cached)...
-  Found 1 broken links in this post
+  3 failed checks (1 genuinely broken) in this post
 
 [2/45] Processing: https://example.substack.com/p/another-post
   Checking 8 links (6 new, 2 cached)...
-  Found 0 broken links in this post
+  0 failed checks (0 genuinely broken) in this post
 ...
 
 Completed in 34.2 seconds
@@ -262,10 +262,13 @@ Links skipped (assumed OK): 8
 Links auto-flagged broken: 0
 Cache hits: 45
 Retries performed: 3
-Broken links found: 5
+Failed checks: 12
+  genuinely broken: 5
+  blocked (likely fine): 6
+  inconclusive: 1
 
 Generating report: broken_links_report.csv
-Report generated with 5 broken links
+Report generated: 5 broken, 6 blocked, 1 inconclusive
 ```
 
 ## CLI Options
@@ -302,22 +305,46 @@ Report generated with 5 broken links
 
 ## Output
 
-The tool generates a CSV report with columns:
-- **Post Title**: Title of the post containing the broken link
-- **Post URL**: URL of the post
-- **Broken Link**: The broken URL
-- **Error Type**: What went wrong (HTTP 404, DNS Failure, SSL Error, etc.)
+The tool generates a CSV report with these columns, sorted most actionable first:
+
+- `category` — how much to trust the finding (see below)
+- `post_title` — title of the post containing the link
+- `post_url` — URL of the post
+- `broken_link` — the link that failed
+- `error_type` — what went wrong (`HTTP 404`, `DNS Failure`, `SSL Error`, …)
+
+## Not every failed check is a dead link
+
+A link check failing does not mean the link is dead. Across four months of real
+reports, **49.6% of failures were HTTP 403 and 11.2% were HTTP 429** — bot
+protection and rate limiting on pages that load perfectly in a browser — against
+only **12.7% genuine 404s**. Reporting all of those the same way produces a
+report that is mostly noise and has to be triaged by hand before it is usable.
+
+So every failure is sorted into one of three categories:
+
+| Category | Meaning | What to do |
+|---|---|---|
+| `broken` | The page is genuinely gone | Fix or drop the link |
+| `blocked` | The server refused us; the link is probably fine | Usually nothing. Consider `--skip-domains` |
+| `inconclusive` | A timeout or 5xx — says more about the moment than the link | Re-check later |
+
+Anything not positively identified as dead or blocked is `inconclusive`. The
+default is deliberately cautious: guessing "dead" would put work in front of you
+that does not exist.
 
 ## Error Types Detected
 
-- `HTTP 404` - Page not found
-- `HTTP 4xx/5xx` - Other HTTP errors
-- `Soft 404` - Page loads but title indicates error
-- `DNS Failure` - Domain doesn't exist
-- `SSL Error` - Certificate problems
-- `Timeout` - Server didn't respond
-- `Connection Error` - Network issues
-- `Known broken domain` - Auto-flagged via `--broken-domains`
+| Error type | Category |
+|---|---|
+| `HTTP 404`, `HTTP 410` | `broken` |
+| `Soft 404` — page loads but its title says otherwise | `broken` |
+| `DNS Failure` — domain does not exist | `broken` |
+| `Malformed URL` — two links concatenated in the post's HTML | `broken` |
+| `Known broken domain` — auto-flagged via `--broken-domains` | `broken` |
+| `HTTP 401`, `403`, `406`, `429`, `451` | `blocked` |
+| Other `HTTP 4xx` / `5xx` | `inconclusive` |
+| `Timeout`, `SSL Error`, `Connection Error` | `inconclusive` |
 
 ## License
 
