@@ -35,6 +35,31 @@ _BLOCKED_STATUSES = {401, 403, 406, 429, 451}
 _DEAD_STATUSES = {404, 410}
 
 
+# Substack's own UI lives on these path segments. Note a comment link is
+# ".../p/<slug>/comments", so the segment appears *inside* the path rather
+# than at its start.
+_SUBSTACK_UI_PATHS = ("/subscribe", "/comments", "/share")
+
+
+def _is_substack_ui_link(link: str) -> bool:
+    """True for Substack's own subscribe / comment / share URLs.
+
+    Matches on hostname and path rather than searching the whole URL. A
+    substring test over the raw link also matches somebody else's address
+    that merely mentions substack.com -- say a redirector like
+    ``https://example.com/?next=https://x.substack.com/share`` -- and would
+    silently drop it from the scan, which is the opposite of this tool's job.
+    """
+    try:
+        parsed = urlparse(link)
+    except ValueError:
+        return False
+    host = parsed.netloc.lower().partition(":")[0]
+    if host != "substack.com" and not host.endswith(".substack.com"):
+        return False
+    return any(segment in parsed.path for segment in _SUBSTACK_UI_PATHS)
+
+
 def _is_malformed_url(link: str) -> bool:
     """True if the address cannot possibly resolve.
 
@@ -423,10 +448,8 @@ class SubstackLinkChecker:
                 if link.startswith("#") or link.startswith("mailto:") or link.startswith("tel:"):
                     continue
 
-                # Skip Substack internal links (comments, share, etc.)
-                if "substack.com" in link and any(
-                    x in link for x in ["/subscribe", "/comments", "/share"]
-                ):
+                # Skip Substack's own UI links (comments, share, etc.)
+                if _is_substack_ui_link(link):
                     continue
 
                 # Make relative URLs absolute
