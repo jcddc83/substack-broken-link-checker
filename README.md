@@ -5,34 +5,25 @@
 [![CI](https://github.com/jcddc83/substack-broken-link-checker/actions/workflows/ci.yml/badge.svg)](https://github.com/jcddc83/substack-broken-link-checker/actions/workflows/ci.yml)
 
 A fast, async Python tool that finds broken links in your Substack newsletter
-archive — and tells you which ones are actually broken.
+archive, classifies them by type and produces a report you can act on.
 
 ## Why This Tool?
 
 Auditing a newsletter archive shouldn't cost $100+/month for tools like Semrush
-or Ahrefs. But cost isn't the real problem with link checkers — **most of what
-they report isn't broken.**
+or Ahrefs. But those tools and especially free alternatives can generate a lot of false positives.
 
-Measured across four months of real reports: **49.6% of failures were HTTP 403
-and 11.2% were HTTP 429** — bot protection and rate limiting on pages that load
-perfectly in a browser — against only **12.7% genuine 404s**. A report like that
-is mostly noise, and every run costs you the same triage by hand.
+The latest updates to this tool fix that, based on measurements from four months of real reports: **49.6% of failures were HTTP 403 and 11.2% were HTTP 429** — bot protection and rate limiting on pages that load perfectly in a browser — against only **12.7% genuine 404s**. A report like that is mostly noise and wastes your time.
 
-So this tool sorts failures by whether they are real, and then by the work each
-one implies:
+This tool now sorts failures by whether they are real, and then by the work each one implies:
 
 - **Separates signal from noise** — every failure is `broken`, `blocked` or
   `inconclusive`, so a bot-blocking host does not read the same as a dead page
 - **Turns a report into a work list** — [`triage`](#turning-a-report-into-a-work-list)
   groups findings by what you would actually do about them
-- **Works with Substack's bot protection** — uses your session cookie to
-  authenticate as a logged-in user
-- **Handles large archives efficiently** — async concurrent checking, 10-20x
-  faster than sequential
-- **Tracks what you have already checked** — incremental scanning, so repeat
-  runs only cover new posts
-- **Safe to leave unattended** — emails you when a scheduled run fails, because
-  a silent failure looks exactly like a clean run
+- **Works with Substack's bot protection** — uses your session cookie to authenticate as a logged-in user
+- **Handles large archives efficiently** — async concurrent checking, 10-20x faster than sequential
+- **Tracks what you have already checked** — incremental scanning, so repeat runs only cover new posts
+- **Safe to leave unattended** — emails you when a scheduled run fails so you're not in the dark
 
 ## Features
 
@@ -128,7 +119,7 @@ substack-link-checker check --base-url https://YOUR.substack.com --year 2024 \
 so it does not end up in your shell history or in `ps aux`. See
 [SECURITY.md](SECURITY.md) for full guidance.
 
-**Note:** Your session cookie expires after a few weeks. If you start getting 403 errors, get a fresh cookie from your browser.
+**Note:** Your session cookie might expire after a few weeks. If you start getting 403 errors, get a fresh cookie from your browser.
 
 ## Usage
 
