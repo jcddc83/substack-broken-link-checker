@@ -42,6 +42,12 @@ def test_substack_ui_links_are_skipped(link):
         # The segment must be in the path. "action=share" in a query string
         # is a tracking parameter on a real post link, not Substack chrome.
         "https://example.substack.com/p/some-post?utm=x&action=share",
+        # Userinfo in the netloc. The request goes to evil.example; reading
+        # everything before the first colon would call it substack.com and
+        # silently skip a third-party link.
+        "https://SUBSTACK.COM:443@evil.example/subscribe",
+        "https://example.substack.com@evil.example/comments",
+        "https://user:pass@evil.example/share",
         # Unrelated links.
         "https://example.com/subscribe",
         "https://example.com/",

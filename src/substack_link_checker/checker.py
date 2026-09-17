@@ -49,12 +49,21 @@ def _is_substack_ui_link(link: str) -> bool:
     that merely mentions substack.com -- say a redirector like
     ``https://example.com/?next=https://x.substack.com/share`` -- and would
     silently drop it from the scan, which is the opposite of this tool's job.
+
+    Uses ``parsed.hostname`` rather than splitting ``netloc`` by hand, because
+    ``netloc`` can carry userinfo: the real host of
+    ``https://SUBSTACK.COM:443@evil.example/subscribe`` is evil.example, and
+    taking everything before the first colon reads it as substack.com. That is
+    the same silent-skip bug in a new place. ``hostname`` strips userinfo and
+    port and lowercases for us.
     """
     try:
         parsed = urlparse(link)
+        host = parsed.hostname
     except ValueError:
         return False
-    host = parsed.netloc.lower().partition(":")[0]
+    if not host:
+        return False
     if host != "substack.com" and not host.endswith(".substack.com"):
         return False
     return any(segment in parsed.path for segment in _SUBSTACK_UI_PATHS)
