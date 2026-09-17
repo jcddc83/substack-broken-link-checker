@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-09-17
+
+### Fixed
+- **Links are no longer silently dropped from the scan.** The filter that
+  skips Substack's own subscribe / comment / share URLs tested
+  `"substack.com" in link` against the whole URL, so a third-party address
+  that merely mentioned substack.com — a redirector like
+  `https://example.com/?next=https://x.substack.com/share` — was treated as
+  Substack chrome and skipped. Nothing in the report indicated a link had gone
+  unchecked, which is the worst failure mode this tool has. The host is now
+  parsed, and the path segment must match.
+- **An explicit port no longer defeats the domain flags.** `--skip-domains`,
+  `--broken-domains` and `triage --retired-hosts` all compared the URL's
+  `netloc`, which keeps the port — so `https://wikipedia.org:443/…` did not
+  match a `wikipedia.org` entry and the flag quietly stopped applying. All
+  host comparisons now use the parsed hostname, which also means userinfo
+  (`https://listed.example@evil.example/`) can no longer make an unlisted host
+  read as a listed one.
+
+### Added
+- `CONTRIBUTING.md` documents the hostname-comparison convention, including
+  that slicing `netloc` silences CodeQL's substring warning without fixing the
+  underlying problem.
+
 ## [1.3.0] - 2026-09-17
 
 Two things the tool needed to be trusted unattended: a way to turn a report
@@ -190,7 +214,8 @@ for the full announcement.
 - Complete `README.md` / `USAGE.md` rewrite with security considerations
   and expanded troubleshooting.
 
-[Unreleased]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.0.0...v1.1.0
