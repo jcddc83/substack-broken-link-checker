@@ -28,6 +28,19 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.8", "3.10", "3.12"]
+        include:
+          # This tool's only real deployment is a Windows scheduled task, and
+          # its worst bug to date (#16) was Windows-only: when stdout is
+          # redirected, Windows falls back to cp1252, which cannot encode the
+          # mark used to flag a broken link -- so the run died on its first
+          # real finding. Linux-only CI could not see it, and the tests added
+          # to prevent a recurrence only prove anything on a Windows runner.
+          #
+          # One job on the current Python is enough. The version floor is
+          # already covered by the Linux matrix, and 3.8 predates the Windows
+          # images we would want to pin to.
+          - os: windows-latest
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
