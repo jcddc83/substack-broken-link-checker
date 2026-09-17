@@ -54,9 +54,7 @@ async def demo_check_links():
     print("Demo complete!")
     print()
     print("To check your own Substack, run:")
-    print(
-        "  python substack_link_checker.py --base-url https://YOUR-SUBSTACK.substack.com --year 2024"
-    )
+    print("  substack-link-checker check --base-url https://YOUR-SUBSTACK.substack.com --year 2024")
 
 
 def main():
