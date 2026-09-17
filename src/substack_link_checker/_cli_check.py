@@ -29,8 +29,8 @@ def load_domains_from_file(file_path: str) -> List[str]:
 def build_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
     """Build the argparse parser for the check subcommand.
 
-    Used both as a top-level parser (legacy `python substack_link_checker.py`
-    shim) and as the parser for `substack-link-checker check ...`.
+    Used for `substack-link-checker check ...` and the equivalent
+    `python -m substack_link_checker check ...`.
     """
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -198,7 +198,7 @@ def run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    """Entry point for `python substack_link_checker.py ...` (legacy shim)."""
+    """Entry point for the `check` subcommand."""
     parser = build_parser()
     args = parser.parse_args()
     run(args)

@@ -26,7 +26,7 @@ commit. Otherwise run them yourself:
 - `ruff format .` — auto-format
 - `pre-commit run --all-files` — runs everything pre-commit would
 - `pytest` — test suite
-- `python substack_link_checker.py --help` — smoke-test the CLI
+- `substack-link-checker --help` — smoke-test the CLI
 
 ## Filing issues
 
