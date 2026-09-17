@@ -82,3 +82,38 @@ class TestIsBrokenDomain:
             broken_domains=["defunct.example.com"],
         )
         assert c.is_broken_domain("https://live.example.com/x") is False
+
+
+class TestHostIsParsedNotStringSliced:
+    """A URL's host must come from `urlparse(...).hostname`.
+
+    `netloc` keeps the port and any userinfo, so slicing it by hand means a
+    port silently defeats the flag -- the user asks to skip wikipedia.org and
+    `https://wikipedia.org:443/...` gets checked anyway -- while userinfo can
+    make a third-party host read as the allowed one.
+    """
+
+    def test_port_does_not_defeat_skip_domains(self):
+        checker = SubstackLinkChecker(
+            base_url="https://example.substack.com", skip_domains=["wikipedia.org"]
+        )
+        assert checker.should_skip_domain("https://wikipedia.org:443/wiki/X") is True
+
+    def test_port_does_not_defeat_broken_domains(self):
+        checker = SubstackLinkChecker(
+            base_url="https://example.substack.com", broken_domains=["dead.example.com"]
+        )
+        assert checker.is_broken_domain("https://dead.example.com:8080/x") is True
+
+    def test_userinfo_cannot_impersonate_a_skip_domain(self):
+        """The request goes to evil.example, so it must still be checked."""
+        checker = SubstackLinkChecker(
+            base_url="https://example.substack.com", skip_domains=["wikipedia.org"]
+        )
+        assert checker.should_skip_domain("https://wikipedia.org@evil.example/w") is False
+
+    def test_userinfo_cannot_impersonate_a_broken_domain(self):
+        checker = SubstackLinkChecker(
+            base_url="https://example.substack.com", broken_domains=["dead.example.com"]
+        )
+        assert checker.is_broken_domain("https://dead.example.com@evil.example/x") is False

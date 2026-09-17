@@ -160,3 +160,23 @@ def test_end_to_end_via_csv(tmp_path):
     assert len(out) == 1
     assert out[0]["class"] == "dead_target"
     assert list(out[0].keys()) == FIELDNAMES
+
+
+class TestRetiredHostIsParsedNotStringSliced:
+    """See TestHostIsParsedNotStringSliced in test_domain_filtering.py -- a
+    port must not stop a listed host from matching, and userinfo must not let
+    an unlisted host borrow a listed one's name."""
+
+    RETIRED = frozenset({"old.example.com"})
+
+    def test_port_does_not_defeat_retired_hosts(self):
+        klass, _ = classify(
+            row("https://old.example.com:443/x", CATEGORY_INCONCLUSIVE), self.RETIRED
+        )
+        assert klass == "retired_host"
+
+    def test_userinfo_cannot_impersonate_a_retired_host(self):
+        klass, _ = classify(
+            row("https://old.example.com@evil.example/x", CATEGORY_INCONCLUSIVE), self.RETIRED
+        )
+        assert klass == "inconclusive_other"

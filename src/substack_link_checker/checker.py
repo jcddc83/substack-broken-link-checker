@@ -35,6 +35,40 @@ _BLOCKED_STATUSES = {401, 403, 406, 429, 451}
 _DEAD_STATUSES = {404, 410}
 
 
+# Substack's own UI lives on these path segments. Note a comment link is
+# ".../p/<slug>/comments", so the segment appears *inside* the path rather
+# than at its start.
+_SUBSTACK_UI_PATHS = ("/subscribe", "/comments", "/share")
+
+
+def _is_substack_ui_link(link: str) -> bool:
+    """True for Substack's own subscribe / comment / share URLs.
+
+    Matches on hostname and path rather than searching the whole URL. A
+    substring test over the raw link also matches somebody else's address
+    that merely mentions substack.com -- say a redirector like
+    ``https://example.com/?next=https://x.substack.com/share`` -- and would
+    silently drop it from the scan, which is the opposite of this tool's job.
+
+    Uses ``parsed.hostname`` rather than splitting ``netloc`` by hand, because
+    ``netloc`` can carry userinfo: the real host of
+    ``https://SUBSTACK.COM:443@evil.example/subscribe`` is evil.example, and
+    taking everything before the first colon reads it as substack.com. That is
+    the same silent-skip bug in a new place. ``hostname`` strips userinfo and
+    port and lowercases for us.
+    """
+    try:
+        parsed = urlparse(link)
+        host = parsed.hostname
+    except ValueError:
+        return False
+    if not host:
+        return False
+    if host != "substack.com" and not host.endswith(".substack.com"):
+        return False
+    return any(segment in parsed.path for segment in _SUBSTACK_UI_PATHS)
+
+
 def _is_malformed_url(link: str) -> bool:
     """True if the address cannot possibly resolve.
 
@@ -257,8 +291,12 @@ class SubstackLinkChecker:
         if not self.skip_domains:
             return False
         try:
-            parsed = urlparse(url)
-            domain = parsed.netloc.lower()
+            # hostname, not netloc: netloc keeps the port and any userinfo, so
+            # "wikipedia.org:443" would not equal "wikipedia.org" and the
+            # domain the user asked to skip would be checked anyway.
+            domain = urlparse(url).hostname
+            if not domain:
+                return False
             # Check if domain matches or is a subdomain of any skip domain
             for skip_domain in self.skip_domains:
                 if domain == skip_domain or domain.endswith("." + skip_domain):
@@ -272,8 +310,10 @@ class SubstackLinkChecker:
         if not self.broken_domains:
             return False
         try:
-            parsed = urlparse(url)
-            domain = parsed.netloc.lower()
+            # hostname, not netloc -- see should_skip_domain.
+            domain = urlparse(url).hostname
+            if not domain:
+                return False
             # Check if domain matches or is a subdomain of any broken domain
             for broken_domain in self.broken_domains:
                 if domain == broken_domain or domain.endswith("." + broken_domain):
@@ -423,10 +463,8 @@ class SubstackLinkChecker:
                 if link.startswith("#") or link.startswith("mailto:") or link.startswith("tel:"):
                     continue
 
-                # Skip Substack internal links (comments, share, etc.)
-                if "substack.com" in link and any(
-                    x in link for x in ["/subscribe", "/comments", "/share"]
-                ):
+                # Skip Substack's own UI links (comments, share, etc.)
+                if _is_substack_ui_link(link):
                     continue
 
                 # Make relative URLs absolute
