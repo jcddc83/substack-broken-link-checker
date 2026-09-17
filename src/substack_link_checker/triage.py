@@ -91,7 +91,7 @@ def split_concatenated(url: str) -> Optional[str]:
 
 def _plausible(url: str) -> bool:
     """True if `url` has something that looks like a hostname."""
-    host = urlparse(url).netloc
+    host = urlparse(url).hostname or ""
     return "." in host and len(host) > 3
 
 
@@ -104,7 +104,8 @@ def classify(row: dict, retired_hosts: frozenset) -> Tuple[str, str]:
     if leading is not None:
         return "malformed_href", leading
 
-    if urlparse(url).netloc.lower() in retired_hosts:
+    # hostname, not netloc: a port would stop a listed host from matching.
+    if (urlparse(url).hostname or "") in retired_hosts:
         return "retired_host", ""
 
     if category == CATEGORY_BROKEN:

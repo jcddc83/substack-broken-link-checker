@@ -291,8 +291,12 @@ class SubstackLinkChecker:
         if not self.skip_domains:
             return False
         try:
-            parsed = urlparse(url)
-            domain = parsed.netloc.lower()
+            # hostname, not netloc: netloc keeps the port and any userinfo, so
+            # "wikipedia.org:443" would not equal "wikipedia.org" and the
+            # domain the user asked to skip would be checked anyway.
+            domain = urlparse(url).hostname
+            if not domain:
+                return False
             # Check if domain matches or is a subdomain of any skip domain
             for skip_domain in self.skip_domains:
                 if domain == skip_domain or domain.endswith("." + skip_domain):
@@ -306,8 +310,10 @@ class SubstackLinkChecker:
         if not self.broken_domains:
             return False
         try:
-            parsed = urlparse(url)
-            domain = parsed.netloc.lower()
+            # hostname, not netloc -- see should_skip_domain.
+            domain = urlparse(url).hostname
+            if not domain:
+                return False
             # Check if domain matches or is a subdomain of any broken domain
             for broken_domain in self.broken_domains:
                 if domain == broken_domain or domain.endswith("." + broken_domain):
