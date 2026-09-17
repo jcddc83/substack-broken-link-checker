@@ -27,3 +27,8 @@ archive_urls*.txt
 .vscode/
 .idea/
 *.swp
+
+# Secrets: config + credentials for the scheduled run.
+secrets.ps1
+*secrets.ps1
+!secrets.ps1.example

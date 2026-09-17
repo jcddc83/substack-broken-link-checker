@@ -19,6 +19,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retired subdomain often serves a mismatched certificate, so the check aborts
   before reading a status and files the row *inconclusive* when it is really
   dead. Only the publisher knows which hosts those are.
+- **Failure alerts for unattended runs**, via
+  `python -m substack_link_checker.notify`. A scheduled run that fails silently
+  is worse than none, because "no broken links this month" and "the run died on
+  its first post" look identical from the outside. Expired session cookies are
+  called out specifically, since that is the failure that recurs. Configured
+  entirely through `NOTIFY_*` environment variables — including
+  `NOTIFY_SMTP_HOST` / `NOTIFY_SMTP_PORT`, so any SMTP server works — and it
+  returns rather than raises when unconfigured, so a missing alert never
+  replaces the error it was trying to report. Delivery uses a finite
+  timeout (`NOTIFY_SMTP_TIMEOUT`, default 30s), since smtplib otherwise
+  waits forever and would hang the very failure path it exists to surface.
+- `secrets.ps1.example`, a template for the PowerShell scheduled run's
+  configuration and credentials.
+
+### Changed
+- **`--output` now defaults to a timestamped filename** rather than the fixed
+  `broken_links_report.csv`, so a scheduled run no longer overwrites the
+  previous report. A clean run still writes no file at all.
+- `run_link_checker.ps1` reads `SUBSTACK_URL` and its credentials from
+  `secrets.ps1` (gitignored) instead of carrying them inline, sends a failure
+  alert, and propagates a real exit code so Task Scheduler's "Last Run Result"
+  means something. It also finds its own directory rather than needing a
+  hardcoded path.
+
+### Fixed
+- `.env.example` documented a `SUBSTACK_BASE_URL` variable that nothing has
+  ever read. Removed, and the `NOTIFY_*` variables documented in its place.
 
 ## [1.2.0] - 2026-09-17
 

@@ -647,8 +647,13 @@ class SubstackLinkChecker:
             f"({genuinely_broken} genuinely broken) in this post\n"
         )
 
-    def generate_report(self, output_file: str = "broken_links_report.csv"):
-        """Generate a CSV report of broken links."""
+    def generate_report(self, output_file: Optional[str] = None):
+        """Generate a CSV report of broken links.
+
+        With no filename, writes a timestamped one. A fixed default meant a
+        scheduled run silently overwrote last month's report, so the history
+        this tool is meant to build up never survived.
+        """
         print(f"\n{'=' * 50}")
         print("SUMMARY")
         print(f"{'=' * 50}")
@@ -667,6 +672,12 @@ class SubstackLinkChecker:
         if not self.results:
             print("\nEvery link checked out fine.")
             return
+
+        # Resolved after the early return: a clean run writes no file, so it
+        # should not mint a filename either.
+        if output_file is None:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            output_file = f"broken_links_report_{timestamp}.csv"
 
         print(f"\nGenerating report: {output_file}")
 
@@ -716,7 +727,7 @@ class SubstackLinkChecker:
         self,
         year: Optional[int] = None,
         limit: Optional[int] = None,
-        output_file: str = "broken_links_report.csv",
+        output_file: Optional[str] = None,
         url_file: Optional[str] = None,
         history_file: Optional[str] = None,
         only_new: bool = False,
@@ -801,7 +812,7 @@ class SubstackLinkChecker:
         self,
         year: Optional[int] = None,
         limit: Optional[int] = None,
-        output_file: str = "broken_links_report.csv",
+        output_file: Optional[str] = None,
         url_file: Optional[str] = None,
         history_file: Optional[str] = None,
         only_new: bool = False,

@@ -67,6 +67,35 @@ def test_csv_header_present(tmp_path):
     assert first_line == "category,post_title,post_url,broken_link,error_type"
 
 
+def test_default_filename_is_timestamped(tmp_path, monkeypatch):
+    """A fixed default meant a scheduled run overwrote last month's report, so
+    the history this tool builds up never survived."""
+    monkeypatch.chdir(tmp_path)
+    checker = SubstackLinkChecker(base_url="https://example.substack.com")
+    checker.results = [
+        BrokenLinkRecord(
+            post_title="t",
+            post_url="u",
+            broken_link="b",
+            error_type="HTTP 404",
+            category=CATEGORY_BROKEN,
+        ),
+    ]
+    checker.generate_report()
+
+    written = list(tmp_path.glob("broken_links_report_*.csv"))
+    assert len(written) == 1
+    assert not (tmp_path / "broken_links_report.csv").exists()
+
+
+def test_clean_run_writes_no_file_even_without_a_filename(tmp_path, monkeypatch):
+    """No results means no report, so it should not mint a filename either."""
+    monkeypatch.chdir(tmp_path)
+    checker = SubstackLinkChecker(base_url="https://example.substack.com")
+    checker.generate_report()
+    assert list(tmp_path.glob("*.csv")) == []
+
+
 def test_rows_are_sorted_most_actionable_first(tmp_path):
     """A dead target needs an edit; a blocked host needs nothing. The top of
     the file should be the work."""
