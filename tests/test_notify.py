@@ -4,8 +4,12 @@ The notifier runs inside a failure handler, so its own failure modes matter
 more than usual: anything it raises replaces the error it was trying to report.
 """
 
-import substack_link_checker.notify as notify_mod
-from substack_link_checker.notify import DEFAULT_SMTP_HOST, DEFAULT_SMTP_PORT, send_failure_email
+from substack_link_checker import notify as notify_mod
+
+DEFAULT_SMTP_HOST = notify_mod.DEFAULT_SMTP_HOST
+DEFAULT_SMTP_PORT = notify_mod.DEFAULT_SMTP_PORT
+DEFAULT_SMTP_TIMEOUT = notify_mod.DEFAULT_SMTP_TIMEOUT
+send_failure_email = notify_mod.send_failure_email
 
 NOTIFY_VARS = (
     "NOTIFY_EMAIL",
@@ -13,6 +17,7 @@ NOTIFY_VARS = (
     "NOTIFY_TO",
     "NOTIFY_SMTP_HOST",
     "NOTIFY_SMTP_PORT",
+    "NOTIFY_SMTP_TIMEOUT",
 )
 
 
@@ -26,9 +31,10 @@ class FakeSMTP:
 
     instances = []
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, timeout=None):
         self.host = host
         self.port = port
+        self.timeout = timeout
         self.logged_in_as = None
         self.sent = []
         FakeSMTP.instances.append(self)
@@ -137,3 +143,24 @@ def test_smtp_failure_is_reported_not_raised(monkeypatch, capsys):
     monkeypatch.setattr(notify_mod.smtplib, "SMTP", ExplodingSMTP)
     assert send_failure_email("Link Checker", "boom") is False
     assert "Failed to send notification email" in capsys.readouterr().out
+
+
+def test_smtp_call_has_a_finite_timeout(monkeypatch):
+    """Without one, smtplib uses the socket default of no timeout, so a dead
+    server hangs the failure handler on exactly the path meant to surface it."""
+    configure(monkeypatch)
+    send_failure_email("Link Checker", "boom")
+    assert FakeSMTP.instances[0].timeout == DEFAULT_SMTP_TIMEOUT
+
+
+def test_smtp_timeout_is_configurable(monkeypatch):
+    configure(monkeypatch, NOTIFY_SMTP_TIMEOUT="5")
+    send_failure_email("Link Checker", "boom")
+    assert FakeSMTP.instances[0].timeout == 5
+
+
+def test_nonsense_timeout_falls_back_rather_than_raising(monkeypatch, capsys):
+    configure(monkeypatch, NOTIFY_SMTP_TIMEOUT="soon")
+    assert send_failure_email("Link Checker", "boom") is True
+    assert FakeSMTP.instances[0].timeout == DEFAULT_SMTP_TIMEOUT
+    assert "not a number" in capsys.readouterr().out

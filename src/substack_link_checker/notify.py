@@ -13,6 +13,7 @@ a file:
     NOTIFY_TO         where to send the alert (defaults to NOTIFY_EMAIL)
     NOTIFY_SMTP_HOST  SMTP server (default: smtp.gmail.com)
     NOTIFY_SMTP_PORT  SMTP port, STARTTLS (default: 587)
+    NOTIFY_SMTP_TIMEOUT  seconds to wait on the SMTP server (default: 30)
 
 Never put real values in this file. An earlier version of it carried a live app
 password in this docstring, and because the file was saved as UTF-16 no secret
@@ -34,6 +35,24 @@ from email.mime.text import MIMEText
 
 DEFAULT_SMTP_HOST = "smtp.gmail.com"
 DEFAULT_SMTP_PORT = 587
+# Seconds. Without an explicit timeout smtplib uses the socket default, which
+# is no timeout at all -- so a network outage or a silently-dropped port 587
+# can hang the alert indefinitely. That blocks the failure handler on exactly
+# the path this notifier exists to make observable, leaving the scheduler
+# without a result. A late alert is still useful; a hung one is not.
+DEFAULT_SMTP_TIMEOUT = 30
+
+
+def _int_env(name, default):
+    """Read an integer environment variable, warning rather than raising."""
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"WARNING: {name} is not a number; using {default}.")
+        return default
 
 
 def send_failure_email(project_name, error_message, is_cookie_error=False):
@@ -48,11 +67,8 @@ def send_failure_email(project_name, error_message, is_cookie_error=False):
     recipient = os.environ.get("NOTIFY_TO", smtp_user)
     smtp_host = os.environ.get("NOTIFY_SMTP_HOST", DEFAULT_SMTP_HOST)
 
-    try:
-        smtp_port = int(os.environ.get("NOTIFY_SMTP_PORT", DEFAULT_SMTP_PORT))
-    except ValueError:
-        print(f"WARNING: NOTIFY_SMTP_PORT is not a number; using {DEFAULT_SMTP_PORT}.")
-        smtp_port = DEFAULT_SMTP_PORT
+    smtp_port = _int_env("NOTIFY_SMTP_PORT", DEFAULT_SMTP_PORT)
+    smtp_timeout = _int_env("NOTIFY_SMTP_TIMEOUT", DEFAULT_SMTP_TIMEOUT)
 
     if not smtp_user or not smtp_password:
         print("WARNING: Email notification not configured.")
@@ -96,7 +112,7 @@ environment variable your scheduled run reads.
     msg.attach(MIMEText(body, "plain"))
 
     try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=smtp_timeout) as server:
             server.starttls()
             server.login(smtp_user, smtp_password)
             server.send_message(msg)

@@ -27,7 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entirely through `NOTIFY_*` environment variables — including
   `NOTIFY_SMTP_HOST` / `NOTIFY_SMTP_PORT`, so any SMTP server works — and it
   returns rather than raises when unconfigured, so a missing alert never
-  replaces the error it was trying to report.
+  replaces the error it was trying to report. Delivery uses a finite
+  timeout (`NOTIFY_SMTP_TIMEOUT`, default 30s), since smtplib otherwise
+  waits forever and would hang the very failure path it exists to surface.
 - `secrets.ps1.example`, a template for the PowerShell scheduled run's
   configuration and credentials.
 
