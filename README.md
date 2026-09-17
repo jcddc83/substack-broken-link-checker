@@ -297,6 +297,7 @@ Report generated: 5 broken, 6 blocked, 1 inconclusive
 | Command | Purpose |
 |--------|---------|
 | `substack-link-checker check` | Main link checker (the command shown throughout this README) |
+| `substack-link-checker triage` | Group a report's failures by the work each one implies |
 | `substack-link-checker compare` | Find posts not yet checked (sitemap vs history) |
 | `substack-link-checker import` | Import previous results from Excel/CSV into history |
 | `substack-link-checker fetch-archive` | Extract URLs from the `/archive` page (fallback when the sitemap doesn't work) |
@@ -332,6 +333,48 @@ So every failure is sorted into one of three categories:
 Anything not positively identified as dead or blocked is `inconclusive`. The
 default is deliberately cautious: guessing "dead" would put work in front of you
 that does not exist.
+
+## Turning a report into a work list
+
+`check` sorts failures by how much to trust them. `triage` goes one step
+further and groups them by the *action* each one implies, which is a different
+axis — a dead target and a mangled `href` are both `broken`, but one needs a
+replacement link and the other needs the post edited.
+
+```bash
+substack-link-checker triage broken_links_report.csv triaged.csv
+```
+
+```
+412 rows -> triaged.csv
+
+  malformed_href       38 links across  21 posts
+  retired_host         12 links across   9 posts
+  dead_target          49 links across  31 posts
+  inconclusive_other   61 links across  40 posts
+  blocked             252 links across  88 posts
+
+  actionable total: 99
+```
+
+Classes, most actionable first:
+
+| Class | What it means |
+|---|---|
+| `malformed_href` | Two URLs concatenated in the post's HTML. No dead target — edit the post. A suggested fix is included |
+| `retired_host` | Host is on your `--retired-hosts` list |
+| `dead_target` | The page is genuinely gone |
+| `inconclusive_other` | Timeout or transient failure, not confirmed dead |
+| `blocked` | Site blocks automated requests; the link is probably fine |
+
+**`--retired-hosts <file>`** takes hostnames you know are retired, one per line.
+This matters because a retired subdomain often serves a certificate that does
+not match, so the check aborts before reading a status and files the row
+*inconclusive* — when in fact it is dead. Only you know which hosts those are
+for the sites you link to.
+
+Wayback and Library of Congress archive URLs legitimately embed a second
+`http://` in their path, so they are not mistaken for concatenations.
 
 ## Error Types Detected
 
