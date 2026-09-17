@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-17
+
+Two things the tool needed to be trusted unattended: a way to turn a report
+into a work list, and a way to find out when a scheduled run dies.
+
 ### Added
 - **`triage` subcommand.** Groups a report's failures by the work each one
   implies, which is a different axis from how much to trust them: a dead
@@ -185,7 +190,8 @@ for the full announcement.
 - Complete `README.md` / `USAGE.md` rewrite with security considerations
   and expanded troubleshooting.
 
-[Unreleased]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/jcddc83/substack-broken-link-checker/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jcddc83/substack-broken-link-checker/releases/tag/v1.0.0
