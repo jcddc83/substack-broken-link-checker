@@ -37,7 +37,8 @@ link.
 
 ```python
 # Wrong: matches any URL that merely mentions the host
-if "example.com" in link: ...
+if "example.com" in link:
+    ...
 
 # Wrong: netloc keeps the port and any userinfo, so
 #   "example.com:443"            != "example.com"      (flag stops working)
